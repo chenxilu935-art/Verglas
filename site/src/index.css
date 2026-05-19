@@ -88,6 +88,71 @@ textarea {
   will-change: transform;
 }
 
+.postcard-group {
+  width: 180px;
+  height: 230px;
+  position: absolute;
+  transform-style: preserve-3d;
+  animation-name: float-orbit;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.postcard-group::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  background: rgba(56,189,248,0.16);
+  filter: blur(16px);
+  opacity: 0.65;
+  z-index: -1;
+}
+
+.postcard-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.7s ease;
+}
+
+.postcard-group:hover .postcard-inner {
+  transform: perspective(1000px) rotateY(180deg);
+}
+
+.postcard-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  padding: 1.5rem;
+  backface-visibility: hidden;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(15,23,42,0.95);
+  box-shadow: 0 20px 70px rgba(99,102,241,0.18);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.postcard-front {
+  background: linear-gradient(180deg, rgba(15,23,42,0.95), rgba(30,41,59,0.92));
+}
+
+.postcard-back {
+  transform: rotateY(180deg);
+  background: linear-gradient(180deg, rgba(30,41,59,0.96), rgba(15,23,42,0.90));
+  border-color: rgba(168,85,247,0.25);
+}
+
+@keyframes float-orbit {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  25% { transform: translate3d(5px, 12px, 0) rotate(6deg); }
+  50% { transform: translate3d(0, 18px, 0) rotate(0deg); }
+  75% { transform: translate3d(-4px, 12px, 0) rotate(-6deg); }
+  100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+}
+
 /* Small utilities for magazine-like misalign */
 .stagger-y-1 { transform: translateY(6px); }
 .stagger-y-2 { transform: translateY(12px); }

@@ -12,6 +12,13 @@ function App() {
   const [showResumeModal, setShowResumeModal] = useState(false)
   const [activeCard, setActiveCard] = useState(null)
 
+  const postcards = [
+    { label: 'Volunteering', top: '8%', left: '6%', duration: '18s', delay: '0s' },
+    { label: "St. Patrick's Day", top: '16%', left: '72%', duration: '22s', delay: '1.8s' },
+    { label: 'Alumni Badge', top: '56%', left: '14%', duration: '20s', delay: '0.9s' },
+    { label: 'Ming Postcard', top: '40%', left: '80%', duration: '24s', delay: '2.4s' },
+  ]
+
   const updateContent = (path, value) => {
     setContent((prev) => {
       const next = JSON.parse(JSON.stringify(prev))
@@ -234,6 +241,27 @@ function App() {
                     active.ctaSecondary
                   )}
                 </a>
+              </div>
+
+              <div className="pointer-events-none absolute inset-0">
+                {postcards.map((card) => (
+                  <div
+                    key={card.label}
+                    className="postcard-group pointer-events-auto absolute"
+                    style={{ top: card.top, left: card.left, animationDuration: card.duration, animationDelay: card.delay }}
+                  >
+                    <div className="postcard-inner">
+                      <div className="postcard-face postcard-front">
+                        <div className="text-[11px] uppercase tracking-[0.35em] text-slate-400">Project</div>
+                        <p className="mt-4 text-lg font-semibold text-white leading-tight">{card.label}</p>
+                      </div>
+                      <div className="postcard-face postcard-back">
+                        <div className="text-[11px] uppercase tracking-[0.35em] text-slate-400">Story</div>
+                        <p className="mt-4 text-lg font-semibold text-white leading-tight">{card.label}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
