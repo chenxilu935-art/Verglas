@@ -8,7 +8,7 @@
   font-size: 16px;
   line-height: 1.5;
   color: #e2e8f0;
-  background: #040617;
+  background: #091320;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -21,9 +21,11 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at top left, rgba(59,130,246,0.22), transparent 18%),
-    radial-gradient(circle at bottom right, rgba(139,92,246,0.16), transparent 28%),
-    linear-gradient(180deg, #060916 0%, #03050e 100%);
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(99,102,241,0.2), transparent 35%),
+    radial-gradient(ellipse at 80% 70%, rgba(139,92,246,0.15), transparent 38%),
+    radial-gradient(ellipse at 50% 45%, rgba(59,130,246,0.07), transparent 55%),
+    linear-gradient(180deg, #0b1929 0%, #0f1d3a 50%, #091320 100%);
 }
 
 #root {
@@ -53,11 +55,15 @@ textarea {
 }
 
 .glass-card {
-  @apply rounded-[32px] border border-white/10 bg-white/10 backdrop-blur-[28px] shadow-glow;
+  @apply rounded-[32px] border backdrop-blur-[28px] shadow-glow;
+  background: rgba(250,245,235,0.08);
+  border-color: rgba(250,245,235,0.09);
 }
 
 .glass-panel {
-  @apply rounded-[32px] border border-white/10 bg-white/10 backdrop-blur-xl shadow-glow;
+  @apply rounded-[32px] border backdrop-blur-xl shadow-glow;
+  background: rgba(250,245,235,0.06);
+  border-color: rgba(250,245,235,0.07);
 }
 
 .section-title {
@@ -72,41 +78,109 @@ textarea {
   @apply rounded-full border border-white/15 bg-slate-950/60 px-4 py-2 text-sm text-slate-200 transition hover:border-slate-200/30 hover:bg-slate-900/80;
 }
 
-/* Reveal on scroll */
+/* ── Cinematic Scroll Reveal System ── */
 .reveal {
   opacity: 0;
-  transform: translateY(18px) scale(0.995);
-  transition: opacity 520ms cubic-bezier(.16,.84,.44,1), transform 520ms cubic-bezier(.16,.84,.44,1);
-}
-.reveal.show {
-  opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translateY(24px);
+  transition: opacity 620ms cubic-bezier(.16,.84,.44,1),
+              transform 620ms cubic-bezier(.16,.84,.44,1);
+  transition-delay: var(--reveal-delay, 0ms);
 }
 
-/* Simple parallax helper (JS toggles inline transform) */
+.reveal.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Entrance variants */
+.reveal-up {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 640ms cubic-bezier(.16,.84,.44,1),
+              transform 640ms cubic-bezier(.16,.84,.44,1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal-up.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-right {
+  opacity: 0;
+  transform: translateX(-28px);
+  transition: opacity 580ms cubic-bezier(.16,.84,.44,1),
+              transform 580ms cubic-bezier(.16,.84,.44,1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal-right.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.reveal-left {
+  opacity: 0;
+  transform: translateX(28px);
+  transition: opacity 580ms cubic-bezier(.16,.84,.44,1),
+              transform 580ms cubic-bezier(.16,.84,.44,1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal-left.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.reveal-scale {
+  opacity: 0;
+  transform: scale(0.94);
+  transition: opacity 560ms cubic-bezier(.16,.84,.44,1),
+              transform 560ms cubic-bezier(.16,.84,.44,1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal-scale.show {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ── Parallax depth layers ── */
 .parallax {
   will-change: transform;
 }
 
+.parallax-deep    { --parallax-speed: 0.06; }
+.parallax-mid     { --parallax-speed: 0.15; }
+.parallax-surface { --parallax-speed: 0.28; }
+.parallax-fast    { --parallax-speed: 0.42; }
+
+/* ── Ocean floating postcards ── */
 .postcard-group {
-  width: 180px;
-  height: 230px;
+  width: 185px;
+  height: 240px;
   position: absolute;
   transform-style: preserve-3d;
-  animation-name: float-orbit;
-  animation-timing-function: ease-in-out;
+  animation-name: drift-on-waves;
+  animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
   animation-iteration-count: infinite;
+  filter: drop-shadow(0 4px 24px rgba(99,102,241,0.22));
+  cursor: pointer;
 }
 
+.postcard-group.alt {
+  animation-name: drift-on-waves-alt;
+}
+
+/* Water reflection glow beneath card — elongated horizontal ellipse */
 .postcard-group::before {
   content: '';
   position: absolute;
-  inset: 0;
-  border-radius: 28px;
-  background: rgba(56,189,248,0.16);
-  filter: blur(16px);
-  opacity: 0.65;
+  bottom: -18px;
+  left: 10%;
+  right: 10%;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(139,126,200,0.45) 0%, transparent 80%);
+  filter: blur(12px);
   z-index: -1;
+  animation: water-glimmer 5s ease-in-out infinite;
 }
 
 .postcard-inner {
@@ -114,43 +188,230 @@ textarea {
   height: 100%;
   position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.7s ease;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.4, 1);
+  will-change: transform;
 }
 
-.postcard-group:hover .postcard-inner {
-  transform: perspective(1000px) rotateY(180deg);
+/* Hover on non-flipped → scale up + mouse tilt */
+.postcard-group:not(.flipped):hover .postcard-inner {
+  transform: scale(1.05) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform 0.25s ease-out;
 }
 
+/* Click-flipped state — lift off the water */
+.postcard-group.flipped .postcard-inner {
+  transform: perspective(1000px) translateZ(12px) rotateY(180deg);
+}
+
+/* Hover on flipped → keep rotation + scale + tilt */
+.postcard-group.flipped:hover .postcard-inner {
+  transform: perspective(1000px) translateZ(12px) rotateY(180deg) scale(1.05) rotateX(var(--tilt-x, 0deg)) rotateY(calc(var(--tilt-y, 0deg) * -1));
+  transition: transform 0.25s ease-out;
+}
+
+/* Shared face base — crumpled paper with burnt-edge vignette */
 .postcard-face {
   position: absolute;
   inset: 0;
-  border-radius: 28px;
-  padding: 1.5rem;
+  border-radius: 10px;
+  padding: 1.2rem;
   backface-visibility: hidden;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(15,23,42,0.95);
-  box-shadow: 0 20px 70px rgba(99,102,241,0.18);
+  border: none;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.12),
+    0 6px 16px rgba(0,0,0,0.16),
+    0 16px 40px rgba(0,0,0,0.22);
+  filter: url(#crumple);
 }
 
+/* ── Burnt-edge vignette: warm cream center → dark brown edge ── */
 .postcard-front {
-  background: linear-gradient(180deg, rgba(15,23,42,0.95), rgba(30,41,59,0.92));
+  background:
+    /* Aging stain spots */
+    radial-gradient(ellipse at 20% 25%, rgba(140,80,20,0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 55%, rgba(120,65,15,0.12) 0%, transparent 45%),
+    radial-gradient(ellipse at 35% 75%, rgba(130,75,20,0.1) 0%, transparent 40%),
+    /* Fine grain */
+    repeating-conic-gradient(rgba(0,0,0,0.02) 0% 25%, transparent 0% 50%) 1px 1px / 2px 2px,
+    /* Vignette: warm cream center → brown → burnt edge */
+    radial-gradient(ellipse at 50% 50%, #f0ddb8 0%, #e8cf9e 22%, #d8b878 48%, #c09858 70%, #9a6a30 87%, #6b4020 97%, #3d2010 100%);
 }
 
+.postcard-front.has-image {
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,0.3) 75%, rgba(30,15,5,0.65) 100%);
+}
+
+.postcard-front .postcard-label {
+  color: rgba(100,55,20,0.8);
+}
+
+.postcard-front .postcard-title {
+  color: #3a2010;
+}
+
+/* Uploaded image fills the front face */
+.postcard-image {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* Texture + vignette overlay on top of uploaded image */
+.postcard-front.has-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 20% 25%, rgba(120,65,15,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 55%, rgba(100,50,10,0.1) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 50%, transparent 25%, rgba(40,20,8,0.4) 75%, rgba(20,8,2,0.65) 100%),
+    repeating-conic-gradient(rgba(0,0,0,0.022) 0% 25%, transparent 0% 50%) 1px 1px / 2px 2px;
+}
+
+/* Upload button — small + icon */
+.postcard-upload {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  z-index: 5;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(160,120,60,0.4);
+  background: rgba(245,235,215,0.85);
+  color: rgba(120,70,20,0.8);
+  font-size: 17px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  backdrop-filter: blur(4px);
+}
+
+.postcard-upload:hover {
+  background: rgba(255,245,225,0.95);
+  border-color: rgba(160,120,60,0.7);
+}
+
+/* Back — same crumpled paper, content-oriented */
 .postcard-back {
   transform: rotateY(180deg);
-  background: linear-gradient(180deg, rgba(30,41,59,0.96), rgba(15,23,42,0.90));
-  border-color: rgba(168,85,247,0.25);
+  background:
+    radial-gradient(ellipse at 20% 15%, rgba(140,80,20,0.12) 0%, transparent 45%),
+    radial-gradient(ellipse at 75% 65%, rgba(120,65,15,0.08) 0%, transparent 40%),
+    repeating-conic-gradient(rgba(0,0,0,0.018) 0% 25%, transparent 0% 50%) 1px 1px / 2px 2px,
+    radial-gradient(ellipse at 50% 50%, #f0ddb8 0%, #e8cf9e 22%, #d8b878 48%, #c09858 70%, #9a6a30 87%, #6b4020 97%, #3d2010 100%);
+  padding: 0.8rem;
+  justify-content: flex-start;
+  overflow-y: auto;
 }
 
-@keyframes float-orbit {
-  0% { transform: translate3d(0, 0, 0) rotate(0deg); }
-  25% { transform: translate3d(5px, 12px, 0) rotate(6deg); }
-  50% { transform: translate3d(0, 18px, 0) rotate(0deg); }
-  75% { transform: translate3d(-4px, 12px, 0) rotate(-6deg); }
-  100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+.postcard-back .postcard-label {
+  color: rgba(100,55,20,0.65);
+}
+
+.postcard-back .postcard-title {
+  color: #3a2010;
+  font-size: 0.95rem;
+}
+
+/* Back side editable fields */
+.postcard-field {
+  width: 100%;
+  background: rgba(255,250,240,0.4);
+  border: 1px dashed rgba(160,120,70,0.25);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.75rem;
+  color: #3d2610;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.postcard-field:focus {
+  border-color: rgba(160,120,70,0.5);
+  background: rgba(255,250,240,0.7);
+  border-style: solid;
+}
+
+.postcard-field::placeholder {
+  color: rgba(140,100,50,0.4);
+}
+
+/* Front face specific input styles */
+.postcard-front-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  font-weight: 500;
+  padding: 3px 6px;
+}
+
+.postcard-front-title {
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  font-weight: 600;
+  padding: 4px 6px;
+}
+
+/* Ocean wave drift — card rocks + bobs + sways like on open water */
+@keyframes drift-on-waves {
+  0%   { transform: translate3d(0, 0, 0) rotate(-1.2deg); }
+  8%   { transform: translate3d(3px, -6px, 0) rotate(0.5deg); }
+  18%  { transform: translate3d(10px, -10px, 0) rotate(3deg); }
+  28%  { transform: translate3d(14px, -2px, 0) rotate(4deg); }
+  38%  { transform: translate3d(10px, 10px, 0) rotate(2deg); }
+  50%  { transform: translate3d(0, -10px, 0) rotate(-2deg); }
+  62%  { transform: translate3d(-10px, -3px, 0) rotate(-4deg); }
+  72%  { transform: translate3d(-14px, 8px, 0) rotate(-3deg); }
+  82%  { transform: translate3d(-7px, 10px, 0) rotate(-0.5deg); }
+  92%  { transform: translate3d(-3px, 4px, 0) rotate(1.2deg); }
+  100% { transform: translate3d(0, 0, 0) rotate(-1.2deg); }
+}
+
+/* Alt drift — reversed phase + shorter amplitude for variety */
+@keyframes drift-on-waves-alt {
+  0%   { transform: translate3d(0, -4px, 0) rotate(1deg); }
+  15%  { transform: translate3d(-8px, -10px, 0) rotate(-2.5deg); }
+  30%  { transform: translate3d(-13px, 4px, 0) rotate(-3.5deg); }
+  45%  { transform: translate3d(-5px, 10px, 0) rotate(-1deg); }
+  60%  { transform: translate3d(10px, -4px, 0) rotate(3deg); }
+  75%  { transform: translate3d(13px, -9px, 0) rotate(3.5deg); }
+  90%  { transform: translate3d(6px, 5px, 0) rotate(1.5deg); }
+  100% { transform: translate3d(0, -4px, 0) rotate(1deg); }
+}
+
+@keyframes water-glimmer {
+  0%, 100% { opacity: 0.4; transform: scaleX(1) translateY(0); }
+  30%  { opacity: 0.75; transform: scaleX(1.25) translateY(-4px); }
+  60%  { opacity: 0.55; transform: scaleX(0.9) translateY(2px); }
+}
+
+/* ── Ocean section — deep navy gradient ── */
+.ocean-section {
+  background:
+    radial-gradient(ellipse at 30% 25%, rgba(139,92,246,0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 55%, rgba(99,102,241,0.22) 0%, transparent 48%),
+    radial-gradient(ellipse at 50% 75%, rgba(59,130,246,0.12) 0%, transparent 42%),
+    radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.35) 30%, rgba(0,0,0,0.55) 100%),
+    linear-gradient(180deg, #0b1a30 0%, #0f2245 50%, #091520 100%);
+  position: relative;
+  overflow: hidden;
 }
 
 /* Small utilities for magazine-like misalign */
@@ -186,3 +447,52 @@ textarea {
 }
 
 .icon-svg { width: 14px; height: 14px; vertical-align: middle; margin-right: 6px; }
+
+/* ── Responsive ── */
+@media (max-width: 767px) {
+  .postcard-group {
+    width: 120px;
+    height: 155px;
+  }
+
+  .postcard-face {
+    padding: 0.8rem;
+    border-radius: 8px;
+  }
+
+  .postcard-front-label {
+    font-size: 7px;
+    letter-spacing: 0.25em;
+  }
+
+  .postcard-front-title {
+    font-size: 0.85rem;
+  }
+
+  .postcard-field {
+    font-size: 0.68rem;
+    padding: 3px 5px;
+  }
+
+  .postcard-upload {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    bottom: 6px;
+    right: 6px;
+  }
+
+  .postcard-image {
+    border-radius: 8px;
+  }
+
+  .postcard-front.has-image::after {
+    border-radius: 8px;
+  }
+
+  /* Mobile-optimized positions — prevent overlap with smaller cards */
+  .postcard-pos-top-l    { top: 6% !important;  left: 4% !important; }
+  .postcard-pos-top-r    { top: 34% !important; left: 58% !important; }
+  .postcard-pos-bottom-l { top: 62% !important; left: 5% !important; }
+  .postcard-pos-bottom-r { top: 60% !important; left: 60% !important; }
+}

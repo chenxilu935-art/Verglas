@@ -11,13 +11,66 @@ function App() {
   const resumeRef = useRef(null)
   const [showResumeModal, setShowResumeModal] = useState(false)
   const [activeCard, setActiveCard] = useState(null)
+  const [flippedId, setFlippedId] = useState(null)
 
-  const postcards = [
-    { label: 'Volunteering', top: '8%', left: '6%', duration: '18s', delay: '0s' },
-    { label: "St. Patrick's Day", top: '16%', left: '72%', duration: '22s', delay: '1.8s' },
-    { label: 'Alumni Badge', top: '56%', left: '14%', duration: '20s', delay: '0.9s' },
-    { label: 'Ming Postcard', top: '40%', left: '80%', duration: '24s', delay: '2.4s' },
-  ]
+  const toggleFlip = (id) => {
+    setFlippedId((prev) => (prev === id ? null : id))
+  }
+
+  const handleTiltMove = (e) => {
+    const card = e.currentTarget
+    const inner = card.querySelector('.postcard-inner')
+    if (!inner) return
+    const rect = card.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const cx = rect.width / 2
+    const cy = rect.height / 2
+    const tiltX = ((y - cy) / cy) * -7
+    const tiltY = ((x - cx) / cx) * 7
+    inner.style.setProperty('--tilt-x', `${tiltX}deg`)
+    inner.style.setProperty('--tilt-y', `${tiltY}deg`)
+  }
+
+  const handleTiltLeave = (e) => {
+    const inner = e.currentTarget.querySelector('.postcard-inner')
+    if (!inner) return
+    inner.style.setProperty('--tilt-x', '0deg')
+    inner.style.setProperty('--tilt-y', '0deg')
+  }
+
+  const [postcards, setPostcards] = useState(() => {
+    try {
+      const saved = localStorage.getItem('postcards_v2')
+      if (saved) return JSON.parse(saved)
+    } catch (e) {}
+    return [
+      { id: 'about', pos: 'top-l', front: 'About', back: 'Intro', zhFront: '关于我', zhBack: '简介', top: '10%', left: '5%', duration: '18s', delay: '0s', alt: false, image: null, frontLabel: '', frontTitle: '', backTitle: '', backDate: '', backNote: '' },
+      { id: 'projects', pos: 'top-r', front: 'Projects', back: 'Work', zhFront: '项目作品', zhBack: '作品', top: '8%', left: '66%', duration: '22s', delay: '1.8s', alt: true, image: null, frontLabel: '', frontTitle: '', backTitle: '', backDate: '', backNote: '' },
+      { id: 'education', pos: 'bottom-l', front: 'Education', back: 'Story', zhFront: '教育背景', zhBack: '故事', top: '56%', left: '6%', duration: '20s', delay: '0.9s', alt: true, image: null, frontLabel: '', frontTitle: '', backTitle: '', backDate: '', backNote: '' },
+      { id: 'experience', pos: 'bottom-r', front: 'Experience', back: 'Journey', zhFront: '经历故事', zhBack: '旅程', top: '54%', left: '70%', duration: '24s', delay: '2.4s', alt: false, image: null, frontLabel: '', frontTitle: '', backTitle: '', backDate: '', backNote: '' },
+    ]
+  })
+
+  const updatePostcard = (id, patch) => {
+    setPostcards((prev) => {
+      const next = prev.map((c) => (c.id === id ? { ...c, ...patch } : c))
+      try { localStorage.setItem('postcards_v2', JSON.stringify(next)) } catch (e) {}
+      return next
+    })
+  }
+
+  const handlePostcardImage = (id) => (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (e) => updatePostcard(id, { image: e.target.result })
+    reader.readAsDataURL(file)
+  }
+
+  const handlePostcardField = (id, field) => (event) => {
+    updatePostcard(id, { [field]: event.target.value })
+  }
 
   const updateContent = (path, value) => {
     setContent((prev) => {
@@ -69,35 +122,46 @@ function App() {
       }
     } catch (e) {}
 
-    // Reveal on scroll
-    const nodes = document.querySelectorAll('.reveal')
-    const obs = new IntersectionObserver(
+    // ── Cinematic reveal: observe all reveal variants ──
+    const revealNodes = document.querySelectorAll('.reveal,.reveal-up,.reveal-right,.reveal-left,.reveal-scale')
+    const revealObs = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('show')
+            revealObs.unobserve(entry.target)
           }
         })
       },
-      { threshold: 0.12 }
+      { threshold: 0.08, rootMargin: '0px 0px -30px 0px' }
     )
-    nodes.forEach((n) => obs.observe(n))
+    revealNodes.forEach((n) => revealObs.observe(n))
 
-    // Parallax
-    const parallaxEls = Array.from(document.querySelectorAll('[data-parallax-speed]'))
+    // ── Parallax: tiered depth speeds ──
+    const parallaxEls = Array.from(document.querySelectorAll('.parallax-deep,.parallax-mid,.parallax-surface,.parallax-fast,[data-parallax-speed]'))
+    const getParallaxSpeed = (el) => {
+      const styleVal = getComputedStyle(el).getPropertyValue('--parallax-speed').trim()
+      if (styleVal) return parseFloat(styleVal)
+      if (el.hasAttribute('data-parallax-speed')) return parseFloat(el.getAttribute('data-parallax-speed'))
+      return 0
+    }
+    let parallaxTick = 0
     const onScroll = () => {
-      const y = window.scrollY || window.pageYOffset
-      parallaxEls.forEach((el) => {
-        const speed = parseFloat(el.getAttribute('data-parallax-speed') || '0')
-        const t = y * speed
-        el.style.transform = `translateY(${t}px)`
+      parallaxTick = requestAnimationFrame(() => {
+        const y = window.scrollY || window.pageYOffset
+        for (let i = 0; i < parallaxEls.length; i += 1) {
+          const el = parallaxEls[i]
+          const speed = getParallaxSpeed(el)
+          el.style.transform = `translateY(${y * speed}px)`
+        }
       })
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     onScroll()
 
     return () => {
-      obs.disconnect()
+      revealObs.disconnect()
+      cancelAnimationFrame(parallaxTick)
       window.removeEventListener('scroll', onScroll)
     }
   }, [])
@@ -149,27 +213,26 @@ function App() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.18),_transparent_22%),radial-gradient(circle_at_bottom_right,_rgba(168,85,247,0.18),_transparent_30%)]" />
-      <div className="relative z-10 mx-auto max-w-7xl px-6 py-6 lg:px-8">
-        <header className="glass-panel sticky top-4 z-30 mb-10 border-white/10 bg-slate-950/60 backdrop-blur-xl px-5 py-4 transition duration-500 sm:px-6">
+    <div className="relative min-h-screen overflow-hidden text-slate-100">
+      <div className="relative z-10 mx-auto max-w-7xl px-6 py-8 lg:px-10">
+        <header className="glass-panel sticky top-4 z-30 mb-12 px-6 py-4 transition duration-500 sm:px-7">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Editorial Portfolio</p>
-              <p className="mt-1 text-2xl font-display font-semibold text-white">Chenxi Lu / 路晨曦</p>
+              <p className="text-xs uppercase tracking-[0.38em] text-indigo-300/70">Editorial Portfolio</p>
+              <p className="mt-1 text-2xl font-display font-semibold text-white/95">Chenxi Lu / 路晨曦</p>
             </div>
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <button
                 type="button"
                 onClick={() => setLocale('zh')}
-                className={`rounded-full border px-4 py-2 transition ${locale === 'zh' ? 'border-sky-300/80 bg-sky-300/15 text-white' : 'border-white/10 text-slate-300 hover:border-white/20'}`}
+                className={`rounded-full border px-4 py-2 transition ${locale === 'zh' ? 'border-indigo-300/80 bg-indigo-400/12 text-white' : 'border-white/10 text-slate-300 hover:border-white/20'}`}
               >
                 中
               </button>
               <button
                 type="button"
                 onClick={() => setLocale('en')}
-                className={`rounded-full border px-4 py-2 transition ${locale === 'en' ? 'border-sky-300/80 bg-sky-300/15 text-white' : 'border-white/10 text-slate-300 hover:border-white/20'}`}
+                className={`rounded-full border px-4 py-2 transition ${locale === 'en' ? 'border-indigo-300/80 bg-indigo-400/12 text-white' : 'border-white/10 text-slate-300 hover:border-white/20'}`}
               >
                 EN
               </button>
@@ -184,149 +247,219 @@ function App() {
           </div>
         </header>
 
-        <main className="grid gap-8 lg:grid-cols-[1.6fr_0.9fr]">
-          <section className="space-y-8">
-            <div className="glass-card relative overflow-hidden p-8 shadow-glow">
-              <div data-parallax-speed="0.22" className="parallax absolute -right-20 top-4 h-64 w-64 rounded-full bg-sky-500/20 blur-3xl" />
-              <div data-parallax-speed="0.12" className="parallax absolute left-0 top-24 h-40 w-40 rounded-full bg-fuchsia-500/15 blur-3xl" />
-              {editMode ? (
-                <input
-                  value={active.heroBadge}
-                  onChange={handleFieldChange('heroBadge')}
-                  className="mt-2 w-full max-w-xs rounded-full border border-white/10 bg-slate-950/70 px-4 py-2 text-xs uppercase tracking-[0.32em] text-slate-100"
-                />
-              ) : (
-                <span className="inline-flex rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.32em] text-slate-200">
-                  {active.heroBadge}
-                </span>
-              )}
-              <div className="mt-6 max-w-3xl">
-                {editMode ? (
-                  <textarea
-                    rows={2}
-                    value={active.heroHeadline}
-                    onChange={handleFieldChange('heroHeadline')}
-                    className="w-full resize-none rounded-3xl border border-white/10 bg-slate-950/70 px-4 py-4 text-4xl font-display font-semibold leading-tight text-white sm:text-5xl"
-                  />
-                ) : (
-                  <h1 className="text-5xl font-display font-semibold leading-tight tracking-[-0.05em] text-white sm:text-6xl">
-                    {active.heroHeadline}
-                  </h1>
-                )}
-              </div>
-              {editMode ? (
-                <textarea
-                  rows={3}
-                  value={active.heroDescription}
-                  onChange={handleFieldChange('heroDescription')}
-                  className="mt-6 w-full max-w-3xl resize-none rounded-3xl border border-white/10 bg-slate-950/70 px-4 py-4 text-base leading-8 text-slate-100"
-                />
-              ) : (
-                <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300 sm:text-xl">
-                  {active.heroDescription}
-                </p>
-              )}
-              <div className="mt-8 flex flex-wrap gap-4">
-                <a href="#resume" className="inline-flex rounded-full bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:-translate-y-0.5">
-                  {editMode ? (
-                    <input value={active.ctaPrimary} onChange={handleFieldChange('ctaPrimary')} className="w-full bg-transparent text-left text-sm font-semibold text-white outline-none" />
-                  ) : (
-                    active.ctaPrimary
-                  )}
-                </a>
-                <a href="#contact" className="inline-flex rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:border-sky-300/40">
-                  {editMode ? (
-                    <input value={active.ctaSecondary} onChange={handleFieldChange('ctaSecondary')} className="w-full bg-transparent text-left text-sm font-semibold text-slate-100 outline-none" />
-                  ) : (
-                    active.ctaSecondary
-                  )}
-                </a>
-              </div>
-
-              <div className="pointer-events-none absolute inset-0">
-                {postcards.map((card) => (
-                  <div
-                    key={card.label}
-                    className="postcard-group pointer-events-auto absolute"
-                    style={{ top: card.top, left: card.left, animationDuration: card.duration, animationDelay: card.delay }}
-                  >
-                    <div className="postcard-inner">
-                      <div className="postcard-face postcard-front">
-                        <div className="text-[11px] uppercase tracking-[0.35em] text-slate-400">Project</div>
-                        <p className="mt-4 text-lg font-semibold text-white leading-tight">{card.label}</p>
-                      </div>
-                      <div className="postcard-face postcard-back">
-                        <div className="text-[11px] uppercase tracking-[0.35em] text-slate-400">Story</div>
-                        <p className="mt-4 text-lg font-semibold text-white leading-tight">{card.label}</p>
-                      </div>
+        <main className="space-y-14">
+          <section id="landing" className="ocean-section relative overflow-hidden p-8 h-screen min-h-screen rounded-[32px] border border-white/10 shadow-glow">
+            {/* SVG filters for crumpled paper texture */}
+            <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
+              <filter id="crumple" x="-5%" y="-5%" width="110%" height="110%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="6" result="noise" />
+                <feDiffuseLighting in="noise" surfaceScale="3.5" diffuseConstant="0.92" lighting-color="#fff8ee" result="light">
+                  <feDistantLight azimuth="130" elevation="32" />
+                </feDiffuseLighting>
+                <feBlend in="SourceGraphic" in2="light" mode="multiply" result="blended" />
+                <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="3" result="edgeRough" />
+                <feDisplacementMap in="blended" in2="edgeRough" scale="5" xChannelSelector="R" yChannelSelector="G" result="displaced" />
+                <feComposite in="displaced" in2="SourceGraphic" operator="in" />
+              </filter>
+            </svg>
+            {/* Postcards drifting on water */}
+            <div className="pointer-events-none absolute inset-0 z-10">
+              {postcards.map((card) => (
+                <div
+                  key={card.id}
+                  className={`postcard-group postcard-pos-${card.pos} pointer-events-auto absolute${card.alt ? ' alt' : ''}${flippedId === card.id ? ' flipped' : ''}`}
+                  style={{ top: card.top, left: card.left, animationDuration: card.duration, animationDelay: card.delay }}
+                  onClick={() => toggleFlip(card.id)}
+                  onMouseMove={handleTiltMove}
+                  onMouseLeave={handleTiltLeave}
+                >
+                  <div className="postcard-inner">
+                    <div className={`postcard-face postcard-front${card.image ? ' has-image' : ''}`}>
+                      {card.image && <img src={card.image} alt="" className="postcard-image" />}
+                      <input
+                        className="postcard-field postcard-front-label"
+                        placeholder={locale === 'zh' ? card.zhFront : card.front}
+                        value={card.frontLabel}
+                        onChange={handlePostcardField(card.id, 'frontLabel')}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ position: 'relative', zIndex: 2 }}
+                      />
+                      <input
+                        className="postcard-field postcard-front-title mt-2"
+                        placeholder={locale === 'zh' ? card.zhBack : card.back}
+                        value={card.frontTitle}
+                        onChange={handlePostcardField(card.id, 'frontTitle')}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ fontFamily: 'KaiTi, serif', position: 'relative', zIndex: 2 }}
+                      />
+                      <div className="mt-3 h-[1px] w-8 bg-amber-700/20" style={{ position: 'relative', zIndex: 2 }} />
+                      {/* Upload button */}
+                      <button
+                        className="postcard-upload"
+                        title={locale === 'zh' ? '上传照片' : 'Upload photo'}
+                        onClick={(e) => { e.stopPropagation(); document.getElementById(`upload-${card.id}`).click() }}
+                      >+</button>
+                      <input id={`upload-${card.id}`} type="file" accept="image/*" className="hidden" onChange={handlePostcardImage(card.id)} />
+                    </div>
+                    <div className="postcard-face postcard-back">
+                      <div className="postcard-label text-[10px] uppercase tracking-[0.4em] font-medium">{locale === 'zh' ? card.zhFront : card.front}</div>
+                      <div className="h-[1px] w-6 bg-amber-700/15 mt-1 mb-2" />
+                      <input
+                        className="postcard-field"
+                        placeholder={locale === 'zh' ? '标题...' : 'Title...'}
+                        value={card.backTitle}
+                        onChange={handlePostcardField(card.id, 'backTitle')}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <input
+                        className="postcard-field mt-2"
+                        placeholder={locale === 'zh' ? '日期...' : 'Date...'}
+                        value={card.backDate}
+                        onChange={handlePostcardField(card.id, 'backDate')}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <textarea
+                        className="postcard-field mt-2 flex-1"
+                        placeholder={locale === 'zh' ? '写点心得...' : 'Write a note...'}
+                        value={card.backNote}
+                        onChange={handlePostcardField(card.id, 'backNote')}
+                        onClick={(e) => e.stopPropagation()}
+                        rows={3}
+                      />
                     </div>
                   </div>
-                ))}
-              </div>
-
-              <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {active.stats.map((item, index) => (
-                  <div key={index} className="reveal rounded-3xl border border-white/10 bg-slate-950/50 p-5 backdrop-blur-xl transition hover:border-sky-300/30 hover:bg-slate-900/70">
-                    {editMode ? (
-                      <input
-                        value={item.label}
-                        onChange={(e) => updateContent(`stats.${index}.label`, e.target.value)}
-                        className="w-full rounded-lg border border-white/10 bg-slate-950/80 px-2 py-1 text-xs uppercase tracking-[0.3em] text-slate-200"
-                      />
-                    ) : (
-                      <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{item.label}</p>
-                    )}
-                    {editMode ? (
-                      <input
-                        value={item.value}
-                        onChange={(e) => updateContent(`stats.${index}.value`, e.target.value)}
-                        className="mt-3 w-full rounded-lg border border-white/10 bg-slate-950/80 px-2 py-2 text-xl font-semibold text-white"
-                      />
-                    ) : (
-                      <p className="mt-3 text-xl font-semibold text-white">{item.value}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div id="resume" className="glass-card p-8">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-sm uppercase tracking-[0.32em] text-sky-300/70">{active.sections.resume.label}</p>
-                  <h2 className="mt-3 text-3xl font-display font-semibold text-white">{active.sections.resume.title}</h2>
                 </div>
-                <div className="flex gap-3">
-                  <button onClick={() => setShowResumeModal(true)} className="inline-flex rounded-full bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5">
-                    {locale === 'zh' ? '查看精选简历' : 'View Featured'}
-                  </button>
-                  <a href={`mailto:${active.contact.email}`} className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-sky-300/40">
-                    {active.sections.resume.cta}
-                  </a>
-                </div>
-              </div>
-              <div className="mt-8 space-y-6">
-                {active.experience.map((item, index) => (
-                  <div key={index} role="button" tabIndex={0} onClick={() => setActiveCard({ title: `${item.role} — ${item.company}`, detail: item.detail || item.description })} className="reveal rounded-3xl border border-white/10 bg-slate-950/40 p-6 transition hover:border-sky-300/30 hover:bg-slate-900/60 cursor-pointer">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="text-sm text-slate-400">{item.period}</p>
-                        <h3 className="mt-2 text-2xl font-semibold text-white">{item.role}</h3>
-                      </div>
-                      <div className="text-sm text-slate-300 sm:text-right">
-                        <p>{item.company}</p>
-                        <p>{item.location}</p>
-                      </div>
-                    </div>
-                    <p className="mt-4 text-slate-300 leading-7">{item.description}</p>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
           </section>
 
-          <aside className="space-y-4">
-            <div className="glass-card yuque-card compact-resume">
+          <section id="home-content" className="grid gap-12 lg:grid-cols-[1.5fr_0.9fr]">
+            <div className="space-y-10">
+              <div className="glass-card relative overflow-hidden p-8 sm:p-10 shadow-glow reveal-up">
+                <p className="text-xs uppercase tracking-[0.38em] text-indigo-300/70">{locale === 'zh' ? '欢迎来到主页' : 'Welcome to the homepage'}</p>
+                <h2 className="mt-6 text-4xl font-display font-semibold leading-tight text-white/95 sm:text-5xl">{locale === 'zh' ? '探索我的个人简介与作品经历' : 'Explore my profile and portfolio'}</h2>
+                <p className="mt-6 text-base leading-8 text-slate-300 sm:text-lg">{locale === 'zh' ? '明信片是入口，下面是完整的简历、项目和联系方式。' : 'The postcards are the entry point; scroll down for the full profile, work, and contact info.'}</p>
+              </div>
+              <div className="glass-card relative overflow-hidden p-8 sm:p-10 shadow-glow reveal-up">
+                <div className="parallax-mid parallax absolute -right-20 top-4 h-80 w-80 rounded-full bg-indigo-500/15 blur-3xl" />
+                <div className="parallax-deep parallax absolute left-0 top-24 h-48 w-48 rounded-full bg-fuchsia-500/12 blur-3xl" />
+                {editMode ? (
+                  <input
+                    value={active.heroBadge}
+                    onChange={handleFieldChange('heroBadge')}
+                    className="mt-2 w-full max-w-xs rounded-full border border-indigo-300/20 bg-indigo-950/30 px-4 py-2 text-xs uppercase tracking-[0.38em] text-indigo-200"
+                  />
+                ) : (
+                  <span className="reveal-scale inline-flex rounded-full border border-indigo-300/20 bg-indigo-500/10 px-4 py-2 text-xs uppercase tracking-[0.38em] text-indigo-200/90" style={{ '--reveal-delay': '100ms' }}>
+                    {active.heroBadge}
+                  </span>
+                )}
+                <div className="mt-8 max-w-3xl">
+                  {editMode ? (
+                    <textarea
+                      rows={2}
+                      value={active.heroHeadline}
+                      onChange={handleFieldChange('heroHeadline')}
+                      className="w-full resize-none rounded-3xl border border-white/10 bg-slate-950/70 px-4 py-4 text-4xl font-display font-semibold leading-tight text-white sm:text-5xl"
+                    />
+                  ) : (
+                    <h1 className="text-6xl font-display font-semibold leading-[1.08] tracking-[-0.04em] text-white/95 sm:text-7xl">
+                      {active.heroHeadline}
+                    </h1>
+                  )}
+                </div>
+                {editMode ? (
+                  <textarea
+                    rows={3}
+                    value={active.heroDescription}
+                    onChange={handleFieldChange('heroDescription')}
+                    className="mt-8 w-full max-w-3xl resize-none rounded-3xl border border-white/10 bg-slate-950/70 px-4 py-4 text-base leading-8 text-slate-100"
+                  />
+                ) : (
+                  <p className="mt-8 max-w-3xl text-lg leading-8 text-slate-300 sm:text-xl">
+                    {active.heroDescription}
+                  </p>
+                )}
+                <div className="mt-8 flex flex-wrap gap-4">
+                  <a href="#resume" className="inline-flex rounded-full bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:-translate-y-0.5">
+                    {editMode ? (
+                      <input value={active.ctaPrimary} onChange={handleFieldChange('ctaPrimary')} className="w-full bg-transparent text-left text-sm font-semibold text-white outline-none" />
+                    ) : (
+                      active.ctaPrimary
+                    )}
+                  </a>
+                  <a href="#contact" className="inline-flex rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:border-indigo-300/40">
+                    {editMode ? (
+                      <input value={active.ctaSecondary} onChange={handleFieldChange('ctaSecondary')} className="w-full bg-transparent text-left text-sm font-semibold text-slate-100 outline-none" />
+                    ) : (
+                      active.ctaSecondary
+                    )}
+                  </a>
+                </div>
+
+                <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {active.stats.map((item, index) => (
+                    <div key={index} className="reveal-scale rounded-3xl border border-white/10 bg-slate-950/50 p-5 backdrop-blur-xl transition hover:border-indigo-300/30 hover:bg-slate-900/70" style={{ '--reveal-delay': `${index * 120}ms` }}>
+                      {editMode ? (
+                        <input
+                          value={item.label}
+                          onChange={(e) => updateContent(`stats.${index}.label`, e.target.value)}
+                          className="w-full rounded-lg border border-white/10 bg-slate-950/80 px-2 py-1 text-xs uppercase tracking-[0.3em] text-slate-200"
+                        />
+                      ) : (
+                        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{item.label}</p>
+                      )}
+                      {editMode ? (
+                        <input
+                          value={item.value}
+                          onChange={(e) => updateContent(`stats.${index}.value`, e.target.value)}
+                          className="mt-3 w-full rounded-lg border border-white/10 bg-slate-950/80 px-2 py-2 text-xl font-semibold text-white"
+                        />
+                      ) : (
+                        <p className="mt-3 text-xl font-semibold text-white">{item.value}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div id="resume" className="glass-card p-8 reveal-up">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-sm uppercase tracking-[0.32em] text-indigo-300/70">{active.sections.resume.label}</p>
+                    <h2 className="mt-3 text-3xl font-display font-semibold text-white">{active.sections.resume.title}</h2>
+                  </div>
+                  <div className="flex gap-3">
+                    <button onClick={() => setShowResumeModal(true)} className="inline-flex rounded-full bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5">
+                      {locale === 'zh' ? '查看精选简历' : 'View Featured'}
+                    </button>
+                    <a href={`mailto:${active.contact.email}`} className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-indigo-300/40">
+                      {active.sections.resume.cta}
+                    </a>
+                  </div>
+                </div>
+                <div className="mt-8 space-y-6">
+                  {active.experience.map((item, index) => (
+                    <div key={index} role="button" tabIndex={0} onClick={() => setActiveCard({ title: `${item.role} — ${item.company}`, detail: item.detail || item.description })} className="reveal-right rounded-3xl border border-white/10 bg-slate-950/40 p-6 transition hover:border-indigo-300/30 hover:bg-slate-900/60 cursor-pointer" style={{ '--reveal-delay': `${index * 150}ms` }}>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-sm text-slate-400">{item.period}</p>
+                          <h3 className="mt-2 text-2xl font-semibold text-white">{item.role}</h3>
+                        </div>
+                        <div className="text-sm text-slate-300 sm:text-right">
+                          <p>{item.company}</p>
+                          <p>{item.location}</p>
+                        </div>
+                      </div>
+                      <p className="mt-4 text-slate-300 leading-7">{item.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <aside className="space-y-4">
+            <div className="glass-card yuque-card compact-resume reveal-left" style={{ '--reveal-delay': '80ms' }}>
               <div className="resume-header" ref={resumeRef}>
                 <div className="resume-meta">
                   <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-white/8">
@@ -480,7 +613,7 @@ function App() {
               </div>
             </div>
 
-            <div className="glass-card yuque-card">
+            <div className="glass-card yuque-card reveal-left" style={{ '--reveal-delay': '200ms' }}>
               <div className="resume-row">
                 <div>
                   {editMode ? (
@@ -520,7 +653,7 @@ function App() {
               </div>
             </div>
 
-            <div className="glass-card yuque-card">
+            <div className="glass-card yuque-card reveal-left" style={{ '--reveal-delay': '300ms' }}>
               <div className="resume-row">
                 <div>
                   {editMode ? (
@@ -565,7 +698,7 @@ function App() {
               </div>
             </div>
 
-            <div className="glass-card yuque-card">
+            <div className="glass-card yuque-card reveal-left" style={{ '--reveal-delay': '400ms' }}>
               <div className="resume-row">
                 <div>
                   {editMode ? (
@@ -603,7 +736,7 @@ function App() {
                   </div>
                 ))}
                 <div className="mt-3 text-center">
-                  <button onClick={() => setShowResumeModal(true)} className="inline-flex rounded-full bg-sky-500/80 px-3 py-2 text-sm text-white">{locale === 'zh' ? '查看完整简历' : 'Open Full'}</button>
+                  <button onClick={() => setShowResumeModal(true)} className="inline-flex rounded-full bg-indigo-500/80 px-3 py-2 text-sm text-white">{locale === 'zh' ? '查看完整简历' : 'Open Full'}</button>
                 </div>
               </div>
             </div>
@@ -617,6 +750,7 @@ function App() {
               </div>
             )}
           </aside>
+          </section>
         </main>
         {showResumeModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
