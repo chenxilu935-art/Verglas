@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect, useRef } from 'react'
 import homeContent from './data/homeContent'
 import heroImg from './assets/hero.png'
+import postcardDefaults from './data/postcardContent.json'
 
 function App() {
   const [locale, setLocale] = useState('zh')
@@ -39,17 +40,27 @@ function App() {
     inner.style.setProperty('--tilt-y', '0deg')
   }
 
+  const basePostcards = [
+    { id: 'about', pos: 'top-l', front: 'About', back: 'Intro', zhFront: '关于我', zhBack: '简介', top: '10%', left: '5%', duration: '18s', delay: '0s', alt: false },
+    { id: 'projects', pos: 'top-r', front: 'Projects', back: 'Work', zhFront: '项目作品', zhBack: '作品', top: '8%', left: '66%', duration: '22s', delay: '1.8s', alt: true },
+    { id: 'education', pos: 'bottom-l', front: 'Education', back: 'Story', zhFront: '教育背景', zhBack: '故事', top: '56%', left: '6%', duration: '20s', delay: '0.9s', alt: true },
+    { id: 'experience', pos: 'bottom-r', front: 'Experience', back: 'Journey', zhFront: '经历故事', zhBack: '旅程', top: '54%', left: '70%', duration: '24s', delay: '2.4s', alt: false },
+  ]
+
   const [postcards, setPostcards] = useState(() => {
     try {
       const saved = localStorage.getItem('postcards_v2')
       if (saved) return JSON.parse(saved)
     } catch (e) {}
-    return [
-      { id: 'about', pos: 'top-l', front: 'About', back: 'Intro', zhFront: '关于我', zhBack: '简介', top: '10%', left: '5%', duration: '18s', delay: '0s', alt: false, image: null, frontLabel: '', frontTitle: '', backTitle: '', backDate: '', backNote: '' },
-      { id: 'projects', pos: 'top-r', front: 'Projects', back: 'Work', zhFront: '项目作品', zhBack: '作品', top: '8%', left: '66%', duration: '22s', delay: '1.8s', alt: true, image: null, frontLabel: '', frontTitle: '', backTitle: '', backDate: '', backNote: '' },
-      { id: 'education', pos: 'bottom-l', front: 'Education', back: 'Story', zhFront: '教育背景', zhBack: '故事', top: '56%', left: '6%', duration: '20s', delay: '0.9s', alt: true, image: null, frontLabel: '', frontTitle: '', backTitle: '', backDate: '', backNote: '' },
-      { id: 'experience', pos: 'bottom-r', front: 'Experience', back: 'Journey', zhFront: '经历故事', zhBack: '旅程', top: '54%', left: '70%', duration: '24s', delay: '2.4s', alt: false, image: null, frontLabel: '', frontTitle: '', backTitle: '', backDate: '', backNote: '' },
-    ]
+    return basePostcards.map((c) => ({
+      ...c,
+      image: postcardDefaults[c.id]?.image || null,
+      frontLabel: postcardDefaults[c.id]?.frontLabel || '',
+      frontTitle: postcardDefaults[c.id]?.frontTitle || '',
+      backTitle: postcardDefaults[c.id]?.backTitle || '',
+      backDate: postcardDefaults[c.id]?.backDate || '',
+      backNote: postcardDefaults[c.id]?.backNote || '',
+    }))
   })
 
   const updatePostcard = (id, patch) => {

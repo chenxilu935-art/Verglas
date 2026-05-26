@@ -1,0 +1,34 @@
+{
+  "about": {
+    "image": null,
+    "frontLabel": "",
+    "frontTitle": "",
+    "backTitle": "",
+    "backDate": "",
+    "backNote": ""
+  },
+  "projects": {
+    "image": null,
+    "frontLabel": "",
+    "frontTitle": "",
+    "backTitle": "",
+    "backDate": "",
+    "backNote": ""
+  },
+  "education": {
+    "image": null,
+    "frontLabel": "",
+    "frontTitle": "",
+    "backTitle": "",
+    "backDate": "",
+    "backNote": ""
+  },
+  "experience": {
+    "image": null,
+    "frontLabel": "",
+    "frontTitle": "",
+    "backTitle": "",
+    "backDate": "",
+    "backNote": ""
+  }
+}
